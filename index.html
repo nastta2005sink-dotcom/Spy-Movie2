@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Spy Movie - Deduce the Impostor!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: 'Segoe UI', 'Poppins', 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* MAIN CONTAINER */
+        .game-container {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(10, 14, 23, 0.7);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 20px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        /* SCREENS */
+        .screen {
+            transition: all 0.3s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* LOBBY + ROOM UI */
+        .lobby-card, .room-panel {
+            background: #0f121cee;
+            border-radius: 32px;
+            padding: 25px;
+            border: 1px solid rgba(255,215,0,0.3);
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+        }
+
+        .title {
+            font-size: 2.2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFD966, #FFB347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        input, button {
+            background: #1e2438;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 60px;
+            font-size: 1rem;
+            color: white;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        button {
+            background: #2d3e5f;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #ffcf4a80;
+        }
+
+        button:hover {
+            background: #4a6a8f;
+            transform: scale(0.97);
+            box-shadow: 0 0 8px gold;
+        }
+
+        .players-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .player-badge {
+            background: #1b212f;
+            padding: 8px 18px;
+            border-radius: 40px;
+            border-left: 5px solid #ffb347;
+            font-weight: bold;
+        }
+
+        /* CHARACTER CARD (secret) */
+        .character-card {
+            background: #03060cee;
+            border-radius: 32px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #ffc857;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        .character-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #2a2f3f;
+            margin: 10px auto;
+            border: 3px solid gold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        /* question area */
+        .question-area {
+            background: #000000aa;
+            border-radius: 40px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .question-text {
+            font-size: 1.6rem;
+            text-align: center;
+            color: #FFE5B4;
+        }
+
+        .answers-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .answer-btn {
+            background: #2c2f3e;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1.1rem;
+        }
+
+        .vote-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .vote-option {
+            background: #2a1e2c;
+            padding: 10px 20px;
+            border-radius: 48px;
+            cursor: pointer;
+        }
+
+        .timer-bar {
+            height: 6px;
+            background: gold;
+            width: 100%;
+            border-radius: 10px;
+            transition: width 1s linear;
+        }
+
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #aaa;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container" id="app">
+    <!-- LOBBY SCREEN (create/join) -->
+    <div id="lobbyScreen" class="screen lobby-card">
+        <h1 class="title">🕵️‍♂️ SPY MOVIE · DEDUCTION 🎬</h1>
+        <p style="text-align:center; color:#ccc;">British vs American · Find the spy!</p>
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 30px 0;">
+            <div style="background:#11161f; padding: 20px; border-radius: 32px;">
+                <h3>🎭 Create Room</h3>
+                <input type="text" id="createPlayerName" placeholder="Your Agent Name" maxlength="12">
+                <button id="createRoomBtn">➕ CREATE ROOM</button>
+            </div>
+            <div style="background:#11161f; padding: 20px; border-radius: 32px;">
+                <h3>🔗 Join Room</h3>
+                <input type="text" id="joinRoomCode" placeholder="Room Code">
+                <input type="text" id="joinPlayerName" placeholder="Your Name">
+                <button id="joinRoomBtn">🚪 JOIN GAME</button>
+            </div>
+        </div>
+        <footer>🎬 Classic spy game: answer questions, expose the fake actor! Up to 5 players</footer>
+    </div>
+
+    <!-- ROOM (WAITING LOBBY INSIDE) -->
+    <div id="roomScreen" class="screen hidden">
+        <div class="room-panel">
+            <div style="display: flex; justify-content: space-between;">
+                <h2>🎥 ROOM: <span id="roomCodeDisplay">---</span></h2>
+                <button id="startGameBtn" style="background:#5f4330;">🎞️ START GAME (5 players)</button>
+            </div>
+            <div id="playersInRoom" class="players-list"></div>
+            <p id="waitMsg" style="color:#ffaa66;">⏳ Waiting for players... (min 3, max 5)</p>
+            <button id="leaveRoomBtn">🚪 Leave Room</button>
+        </div>
+    </div>
+
+    <!-- GAME BOARD - Main Gameplay -->
+    <div id="gameScreen" class="screen hidden">
+        <div class="room-panel">
+            <div style="display: flex; justify-content: space-between;">
+                <span>🎬 SPY MISSION</span>
+                <span>🔍 Round: <span id="roundCounter">1</span> / <span id="totalRounds">10</span></span>
+                <span>🎭 <span id="phaseLabel">Answer Phase</span></span>
+            </div>
+            <div class="timer-bar" id="timerBar" style="width:100%"></div>
+            
+            <!-- active player's character card -->
+            <div id="characterCardArea" class="character-card">
+                <div>🎭 YOUR CHARACTER</div>
+                <div id="charImage" class="character-img">🎭</div>
+                <div id="charMovieName" style="font-size: 1.4rem; font-weight: bold;">????</div>
+                <div id="charActorName" style="font-size: 1.2rem;">???</div>
+                <div id="charNote" style="font-size:0.8rem; color:#aaa;">Movie & Actor (secret)</div>
+            </div>
+
+            <!-- questions area -->
+            <div class="question-area">
+                <div class="question-text" id="currentQuestion">Loading question...</div>
+                <div class="answers-row" id="answersContainer"></div>
+            </div>
+
+            <!-- voting panel (hidden by default) -->
+            <div id="votingPanel" style="display: none;">
+                <h3>🗳️ VOTE FOR THE SPY</h3>
+                <div id="votePlayersList" class="vote-grid"></div>
+                <button id="confirmVoteBtn" style="margin-top: 15px;">✅ CAST VOTE</button>
+            </div>
+
+            <div id="gameMessage" style="background:#221c0e; border-radius: 20px; padding: 10px; margin-top: 15px;"></div>
+            <button id="nextPhaseBtn" style="display: none;">➡️ Next Phase</button>
+            <button id="endGameBtn" style="margin-top: 10px; background:#3a2a2a;">🏠 Quit to Lobby</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --------------------- MOVIE DATABASE (British / American) -----------------
+    const MOVIE_SET = [
+        { movie: "Harry Potter", actor: "Daniel Radcliffe", country: "British", imgEmoji: "⚡" },
+        { movie: "Notting Hill", actor: "Hugh Grant", country: "British", imgEmoji: "📖" },
+        { movie: "James Bond", actor: "Sean Connery", country: "British", imgEmoji: "🔫" },
+        { movie: "Sherlock Holmes", actor: "Benedict Cumberbatch", country: "British", imgEmoji: "🔍" },
+        { movie: "The King's Speech", actor: "Colin Firth", country: "British", imgEmoji: "👑" },
+        { movie: "Mean Girls", actor: "Lindsay Lohan", country: "American", imgEmoji: "💅" },
+        { movie: "Forrest Gump", actor: "Tom Hanks", country: "American", imgEmoji: "🍫" },
+        { movie: "The Dark Knight", actor: "Christian Bale", country: "American", imgEmoji: "🦇" },
+        { movie: "Pulp Fiction", actor: "John Travolta", country: "American", imgEmoji: "🍔" },
+        { movie: "The Avengers", actor: "Robert Downey Jr.", country: "American", imgEmoji: "🛡️" }
+    ];
+
+    // Spy actor pool (different country mismatch)
+    const SPY_ACTORS = [
+        { actor: "Meryl Streep", country: "American", fakeMovie: "Paddington", imgEmoji: "🎭" },
+        { actor: "Tom Holland", country: "British", fakeMovie: "Spider-Man", imgEmoji: "🕷️" },
+        { actor: "Hugh Laurie", country: "British", fakeMovie: "House M.D.", imgEmoji: "🩺" },
+        { actor: "Scarlett Johansson", country: "American", fakeMovie: "Lost in Translation", imgEmoji: "✨" },
+        { actor: "Idris Elba", country: "British", fakeMovie: "The Wire", imgEmoji: "🚔" }
+    ];
+
+    // Game state
+    let currentRoom = null;
+    let playersMap = new Map(); // playerId -> { name, isSpy, movieObj, actorName, movieTitle, characterImg }
+    let currentPlayerId = null;
+    let gameActive = false;
+    let currentRound = 0;
+    let totalQuestions = 10;
+    let questionsList = [];
+    let currentQuestionIndex = 0;
+    let phase = "answer"; // answer or vote
+    let voteResults = new Map(); // voterId -> targetId
+    let eliminatedPlayers = [];
+    let roundInterval = null;
+
+    // Helper to generate room code
+    function generateRoomCode() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    // sample questions
+    function generateQuestions() {
+        const qs = [
+            { text: "What country is your movie originally from? (British / American)", type: "country" },
+            { text: "Describe the main character of your film in 3 words.", type: "open" },
+            { text: "Is your actor known for any iconic accent?", type: "open" },
+            { text: "What's the genre of your movie?", type: "open" },
+            { text: "Does your actor appear in any superhero movie?", type: "open" },
+            { text: "What is a famous quote from your movie?", type: "open" },
+            { text: "Which year roughly was your movie released? (estimation ok)", type: "open" },
+            { text: "Your actor: British or American in real life?", type: "country_actor" },
+            { text: "What's the setting (city / country) of your movie?", type: "open" },
+            { text: "Name another actor that worked with your actor.", type: "open" }
+        ];
+        return qs.slice(0, totalQuestions);
+    }
+
+    // assign roles
+    function assignRoles(playerNames, roomCode) {
+        const players = playerNames.map((name, idx) => ({ id: `p${idx}_${Date.now()}_${idx}`, name }));
+        if (players.length < 3) return null;
+        // choose random spy
+        const spyIndex = Math.floor(Math.random() * players.length);
+        const assignments = [];
+        // get random real movies (distinct for regular players)
+        const shuffledMovies = [...MOVIE_SET];
+        for (let i = shuffledMovies.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledMovies[i], shuffledMovies[j]] = [shuffledMovies[j], shuffledMovies[i]];
+        }
+        let moviePtr = 0;
+        for (let i = 0; i < players.length; i++) {
+            const isSpy = (i === spyIndex);
+            if (!isSpy) {
+                const movieData = shuffledMovies[moviePtr % shuffledMovies.length];
+                moviePtr++;
+                assignments.push({
+                    id: players[i].id,
+                    name: players[i].name,
+                    isSpy: false,
+                    movieTitle: movieData.movie,
+                    actorName: movieData.actor,
+                    country: movieData.country,
+                    imgEmoji: movieData.imgEmoji
+                });
+            } else {
+                const spyActor = SPY_ACTORS[Math.floor(Math.random() * SPY_ACTORS.length)];
+                assignments.push({
+                    id: players[i].id,
+                    name: players[i].name,
+                    isSpy: true,
+                    movieTitle: spyActor.fakeMovie,
+                    actorName: spyActor.actor,
+                    country: spyActor.country === "British" ? "American" : "British", // opposite mismatch
+                    imgEmoji: spyActor.imgEmoji
+                });
+            }
+        }
+        return assignments;
+    }
+
+    // Fake room storage (simulated server)
+    let rooms = {};
+
+    // UI Helpers
+    function showScreen(screenId) {
+        document.getElementById("lobbyScreen").classList.add("hidden");
+        document.getElementById("roomScreen").classList.add("hidden");
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById(screenId).classList.remove("hidden");
+    }
+
+    // Create room
+    document.getElementById("createRoomBtn").onclick = () => {
+        const name = document.getElementById("createPlayerName").value.trim();
+        if (!name) return alert("Enter agent name!");
+        const roomCode = generateRoomCode();
+        const playerId = `player_${Date.now()}_${Math.random()}`;
+        currentPlayerId = playerId;
+        rooms[roomCode] = {
+            code: roomCode,
+            players: [{ id: playerId, name: name }],
+            gameStarted: false,
+            spyGameData: null,
+            currentPhase: null,
+            hostId: playerId,
+            questions: null
+        };
+        currentRoom = roomCode;
+        updateRoomUI();
+        showScreen("roomScreen");
+    };
+
+    document.getElementById("joinRoomBtn").onclick = () => {
+        const code = document.getElementById("joinRoomCode").value.trim().toUpperCase();
+        const name = document.getElementById("joinPlayerName").value.trim();
+        if (!code || !name) return alert("Room code and name required");
+        if (!rooms[code]) return alert("Room not found");
+        if (rooms[code].gameStarted) return alert("Game already in progress");
+        const playerId = `player_${Date.now()}_${Math.random()}`;
+        currentPlayerId = playerId;
+        rooms[code].players.push({ id: playerId, name: name });
+        currentRoom = code;
+        updateRoomUI();
+        showScreen("roomScreen");
+    };
+
+    function updateRoomUI() {
+        const room = rooms[currentRoom];
+        if (!room) return;
+        document.getElementById("roomCodeDisplay").innerText = room.code;
+        const container = document.getElementById("playersInRoom");
+        container.innerHTML = room.players.map(p => `<div class="player-badge">🎭 ${p.name}</div>`).join("");
+        document.getElementById("waitMsg").innerText = room.players.length >= 3 ? "✅ Enough players! Press START." : `⏳ ${room.players.length}/5 players. Need at least 3.`;
+        const startBtn = document.getElementById("startGameBtn");
+        if (room.players.length >= 3 && !room.gameStarted) startBtn.disabled = false;
+        else startBtn.disabled = true;
+    }
+
+    document.getElementById("startGameBtn").onclick = () => {
+        const room = rooms[currentRoom];
+        if (!room || room.gameStarted) return;
+        if (room.players.length < 3) return alert("Need at least 3 players");
+        const playerNames = room.players.map(p => p.name);
+        const assignments = assignRoles(playerNames, currentRoom);
+        if (!assignments) return;
+        // map players data
+        const playerMap = new Map();
+        for (let i = 0; i < room.players.length; i++) {
+            const assign = assignments.find(a => a.id === room.players[i].id);
+            if (assign) {
+                playerMap.set(room.players[i].id, {
+                    name: assign.name,
+                    isSpy: assign.isSpy,
+                    movie: assign.movieTitle,
+                    actor: assign.actorName,
+                    imgEmoji: assign.imgEmoji,
+                    countryAssigned: assign.country
+                });
+            }
+        }
+        room.spyGameData = { playerMap, eliminated: [], round: 0, questions: generateQuestions(), phase: "answer", votes: new Map() };
+        room.gameStarted = true;
+        startGameForPlayers(room);
+    };
+
+    function startGameForPlayers(room) {
+        showScreen("gameScreen");
+        gameActive = true;
+        const data = room.spyGameData;
+        currentRound = 0;
+        currentQuestionIndex = 0;
+        nextRound(room);
+    }
+
+    function nextRound(room) {
+        const data = room.spyGameData;
+        if (data.round >= totalQuestions) {
+            endGameWithWinner(room);
+            return;
+        }
+        data.phase = "answer";
+        phase = "answer";
+        document.getElementById("phaseLabel").innerText = "🎤 Answer Phase";
+        document.getElementById("votingPanel").style.display = "none";
+        document.getElementById("nextPhaseBtn").style.display = "none";
+        document.getElementById("answersContainer").innerHTML = "";
+        const qIndex = data.round;
+        const questionObj = data.questions[qIndex];
+        document.getElementById("currentQuestion").innerText = questionObj.text;
+        document.getElementById("roundCounter").innerText = (data.round+1);
+        document.getElementById("totalRounds").innerText = totalQuestions;
+        showCharacterCard(room);
+        setupAnswerButtons(room, questionObj);
+        data.votes = new Map();
+        startTimer(60, room);
+    }
+
+    function showCharacterCard(room) {
+        const myData = room.spyGameData.playerMap.get(currentPlayerId);
+        if (myData) {
+            document.getElementById("charMovieName").innerHTML = `🎬 ${myData.movie}`;
+            document.getElementById("charActorName").innerHTML = `⭐ ${myData.actor}`;
+            document.getElementById("charImage").innerHTML = myData.imgEmoji || "🎭";
+            if (myData.isSpy) document.getElementById("charNote").innerHTML = "⚠️ YOU ARE THE SPY! Blend in!";
+            else document.getElementById("charNote").innerHTML = "🎭 Loyal agent. Protect your identity.";
+        }
+    }
+
+    function setupAnswerButtons(room, questionObj) {
+        const container = document.getElementById("answersContainer");
+        container.innerHTML = "";
+        if (questionObj.type === "country" || questionObj.type === "country_actor") {
+            const btnBrit = document.createElement("button");
+            btnBrit.innerText = "🇬🇧 British";
+            btnBrit.className = "answer-btn";
+            btnBrit.onclick = () => submitAnswer(room, "British");
+            const btnUs = document.createElement("button");
+            btnUs.innerText = "🇺🇸 American";
+            btnUs.className = "answer-btn";
+            btnUs.onclick = () => submitAnswer(room, "American");
+            container.append(btnBrit, btnUs);
+        } else {
+            const input = document.createElement("input");
+            input.placeholder = "Type your answer...";
+            input.style.flex = "2";
+            input.style.padding = "12px";
+            const submit = document.createElement("button");
+            submit.innerText = "Submit";
+            submit.onclick = () => submitAnswer(room, input.value);
+            container.append(input, submit);
+        }
+    }
+
+    function submitAnswer(room, answerValue) {
+        // No answer tracking needed except moving to next question after all answered? simplified: just proceed to vote after round of questions but we use group voting each round.
+        // For fun: after everyone theoretically answers, next question appears. Let's just load next question after everyone simulated? but this is realtime per player.
+        // easier: each player answers locally (just for immersion) then the host clicks NEXT after all answered but we implement a collective 'next round' button that appears after each round done.
+        // For smooth gameplay: after each answer, automatically advance question but since multiplayer sync is limited, we implement a "Ready" system. But let's make simple: each round has 1 question, then immediately moves to voting phase after timer.
+        // timer leads to voting.
+    }
+
+    function startTimer(seconds, room) {
+        let timeLeft = seconds;
+        const bar = document.getElementById("timerBar");
+        const interval = setInterval(() => {
+            if (!gameActive || room.spyGameData.phase !== "answer") {
+                clearInterval(interval);
+                return;
+            }
+            timeLeft--;
+            const percent = (timeLeft / seconds) * 100;
+            bar.style.width = `${Math.max(0, percent)}%`;
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                startVotingPhase(room);
+            }
+        }, 1000);
+        roundInterval = interval;
+    }
+
+    function startVotingPhase(room) {
+        if (room.spyGameData.phase !== "answer") return;
+        if (roundInterval) clearInterval(roundInterval);
+        room.spyGameData.phase = "vote";
+        phase = "vote";
+        document.getElementById("phaseLabel").innerText = "🗳️ VOTE OFF THE SPY";
+        document.getElementById("votingPanel").style.display = "block";
+        document.getElementById("answersContainer").innerHTML = "";
+        const activePlayers = room.players.filter(p => !room.spyGameData.eliminated.includes(p.id));
+        const container = document.getElementById("votePlayersList");
+        container.innerHTML = "";
+        activePlayers.forEach(p => {
+            if (p.id !== currentPlayerId) {
+                const btn = document.createElement("div");
+                btn.className = "vote-option";
+                btn.innerText = p.name;
+                btn.onclick = () => {
+                    document.querySelectorAll(".vote-option").forEach(el => el.style.background = "#2a1e2c");
+                    btn.style.background = "#c97e00";
+                    window.selectedVoteTarget = p.id;
+                };
+                container.appendChild(btn);
+            }
+        });
+        document.getElementById("confirmVoteBtn").onclick = () => {
+            if (!window.selectedVoteTarget) return alert("Select a suspect!");
+            const targetId = window.selectedVoteTarget;
+            const votes = room.spyGameData.votes || new Map();
+            votes.set(currentPlayerId, targetId);
+            room.spyGameData.votes = votes;
+            document.getElementById("gameMessage").innerHTML = "Vote registered. Waiting for others...";
+            checkAllVotes(room);
+        };
+        startTimer(45, room, true);
+    }
+
+    function checkAllVotes(room) {
+        const activePlayers = room.players.filter(p => !room.spyGameData.eliminated.includes(p.id));
+        const votesCast = room.spyGameData.votes.size;
+        if (votesCast === activePlayers.length) {
+            resolveVote(room);
+        }
+    }
+
+    function resolveVote(room) {
+        const voteMap = room.spyGameData.votes;
+        const count = {};
+        for (let target of voteMap.values()) {
+            count[target] = (count[target] || 0) + 1;
+        }
+        let maxVotes = 0;
+        let eliminatedId = null;
+        for (let [id, c] of Object.entries(count)) {
+            if (c > maxVotes) {
+                maxVotes = c;
+                eliminatedId = id;
+            }
+        }
+        const eliminatedPlayer = room.players.find(p => p.id === eliminatedId);
+        const isSpy = room.spyGameData.playerMap.get(eliminatedId)?.isSpy;
+        if (isSpy) {
+            document.getElementById("gameMessage").innerHTML = `🕵️‍♂️ ELIMINATED: ${eliminatedPlayer.name} was the SPY! Civilians win! 🎉`;
+            endGame(room, "Civilians Win!");
+        } else {
+            document.getElementById("gameMessage").innerHTML = `❌ ${eliminatedPlayer.name} was innocent... The spy remains!`;
+            room.spyGameData.eliminated.push(eliminatedId);
+            room.spyGameData.round++;
+            currentRound = room.spyGameData.round;
+            document.getElementById("nextPhaseBtn").style.display = "block";
+            document.getElementById("nextPhaseBtn").onclick = () => {
+                document.getElementById("votingPanel").style.display = "none";
+                nextRound(room);
+            };
+        }
+        document.getElementById("confirmVoteBtn").disabled = true;
+    }
+
+    function endGameWithWinner(room) {
+        gameActive = false;
+        document.getElementById("gameMessage").innerHTML = "🏆 GAME OVER: SPY SURVIVED ALL ROUNDS? Check roles.";
+        endGame(room, null);
+    }
+
+    function endGame(room, msg) {
+        gameActive = false;
+        if (msg) document.getElementById("gameMessage").innerHTML = msg;
+        document.getElementById("nextPhaseBtn").style.display = "none";
+        document.getElementById("votingPanel").style.display = "none";
+        document.getElementById("endGameBtn").style.display = "block";
+    }
+
+    document.getElementById("endGameBtn").onclick = () => {
+        if (currentRoom && rooms[currentRoom]) delete rooms[currentRoom];
+        showScreen("lobbyScreen");
+        gameActive = false;
+    };
+    document.getElementById("leaveRoomBtn").onclick = () => {
+        if (currentRoom && rooms[currentRoom]) {
+            rooms[currentRoom].players = rooms[currentRoom].players.filter(p => p.id !== currentPlayerId);
+            if (rooms[currentRoom].players.length === 0) delete rooms[currentRoom];
+        }
+        showScreen("lobbyScreen");
+    };
+</script>
+</body>
+</html>
