@@ -1,0 +1,7 @@
+{
+  "name": "spy-movie-game",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
